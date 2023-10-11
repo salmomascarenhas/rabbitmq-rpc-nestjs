@@ -1,12 +1,28 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly amrpConnection: AmqpConnection) {}
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  sendMessage(): void {
+    // (exchange: string, routingKey: string, message: string, options?: Options.Publish)
+    this.amrpConnection.publish<string>(
+      'devolutiva_exchange',
+      'devolutiva.process',
+      JSON.stringify({ message: 'Message from NestJS' }),
+    );
+    console.log('Message sent');
+  }
+
+  @RabbitSubscribe({
+    exchange: 'devolutiva_exchange',
+    routingKey: 'devolutiva.response',
+    queue: 'response_queue',
+  })
+  public async rpcHandler(message: any) {
+    console.log('Message received');
+    console.log(message);
   }
 }
